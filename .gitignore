@@ -4,8 +4,6 @@
 *.dll
 *.so
 *.dylib
-agent
-nri-plugin
 bin/
 
 # Test binary
@@ -40,4 +38,6 @@ tmp/
 # Local config
 *.local
 .env
+
+# Local scripts
 scripts/
