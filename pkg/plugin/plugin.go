@@ -1,4 +1,3 @@
-// Package plugin implements an NRI plugin for namespace-based cgroup isolation.
 package plugin
 
 import (
@@ -15,8 +14,6 @@ const (
 	DefaultPluginIdx  = "10"
 )
 
-// Plugin implements the NRI plugin interface for namespace isolation.
-// It routes containers to namespace-specific cgroups based on NamespaceQuota CRDs.
 type Plugin struct {
 	stub  stub.Stub
 	cache *QuotaCache
@@ -25,14 +22,12 @@ type Plugin struct {
 	idx   string
 }
 
-// Config holds plugin configuration.
 type Config struct {
 	Name       string
 	Idx        string
 	Kubeconfig string
 }
 
-// New creates a new Plugin instance with the given configuration.
 func New(cfg Config, log *logrus.Logger) (*Plugin, error) {
 	if cfg.Name == "" {
 		cfg.Name = DefaultPluginName
@@ -69,7 +64,6 @@ func New(cfg Config, log *logrus.Logger) (*Plugin, error) {
 	return p, nil
 }
 
-// Run starts the plugin and blocks until context is cancelled.
 func (p *Plugin) Run(ctx context.Context) error {
 	p.log.WithFields(logrus.Fields{
 		"name": p.name,
@@ -89,8 +83,6 @@ func (p *Plugin) Run(ctx context.Context) error {
 	return err
 }
 
-// Configure is called when the plugin is configured by containerd.
-// Returns the event mask for RunPodSandbox and CreateContainer events.
 func (p *Plugin) Configure(_ context.Context, _, runtime, version string) (stub.EventMask, error) {
 	p.log.WithFields(logrus.Fields{
 		"runtime": runtime,
@@ -104,7 +96,6 @@ func (p *Plugin) Configure(_ context.Context, _, runtime, version string) (stub.
 	return stub.EventMask(mask), nil
 }
 
-// Synchronize syncs with existing pods/containers on plugin startup.
 func (p *Plugin) Synchronize(_ context.Context, pods []*api.PodSandbox, containers []*api.Container) ([]*api.ContainerUpdate, error) {
 	p.log.WithFields(logrus.Fields{
 		"pods":       len(pods),
@@ -114,12 +105,10 @@ func (p *Plugin) Synchronize(_ context.Context, pods []*api.PodSandbox, containe
 	return nil, nil
 }
 
-// Shutdown is called when the plugin is being stopped.
 func (p *Plugin) Shutdown(_ context.Context) {
 	p.log.Info("Plugin shutdown requested")
 }
 
-// RunPodSandbox is called when a new pod sandbox is created.
 func (p *Plugin) RunPodSandbox(_ context.Context, pod *api.PodSandbox) error {
 	p.log.WithFields(logrus.Fields{
 		"pod":       pod.GetName(),
@@ -129,7 +118,7 @@ func (p *Plugin) RunPodSandbox(_ context.Context, pod *api.PodSandbox) error {
 	return nil
 }
 
-// CreateContainer adjusts the container's cgroup path if the namespace has a quota.
+// CreateContainer adjusts the container's cgroup path to route it to the namespace cgroup slice.
 func (p *Plugin) CreateContainer(_ context.Context, pod *api.PodSandbox, container *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
 	ns := pod.GetNamespace()
 

@@ -16,16 +16,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// NamespaceQuotaGVR is the GroupVersionResource for NamespaceQuota CRD.
 var NamespaceQuotaGVR = schema.GroupVersionResource{
 	Group:    "brasa.cloud",
 	Version:  "v1alpha1",
 	Resource: "namespacequotas",
 }
 
-// QuotaCache maintains an in-memory cache of namespaces with active quotas.
-// It uses a Kubernetes informer to watch NamespaceQuota resources and keep
-// the cache synchronized with the cluster state.
+// QuotaCache maintains an in-memory map of namespaces with active quotas,
+// synchronized via a Kubernetes informer watching NamespaceQuota resources.
 type QuotaCache struct {
 	mu     sync.RWMutex
 	quotas map[string]bool
@@ -36,7 +34,6 @@ type QuotaCache struct {
 	log      *logrus.Entry
 }
 
-// NewQuotaCache creates a new QuotaCache with a dynamic client informer.
 func NewQuotaCache(kubeconfig string, log *logrus.Entry) (*QuotaCache, error) {
 	var config *rest.Config
 	var err error
@@ -77,7 +74,6 @@ func NewQuotaCache(kubeconfig string, log *logrus.Entry) (*QuotaCache, error) {
 	return qc, nil
 }
 
-// Start begins the informer and performs initial cache synchronization.
 func (qc *QuotaCache) Start(ctx context.Context) error {
 	qc.log.Info("Starting quota cache")
 
@@ -94,20 +90,17 @@ func (qc *QuotaCache) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop stops the informer.
 func (qc *QuotaCache) Stop() {
 	qc.log.Debug("Stopping quota cache")
 	close(qc.stopCh)
 }
 
-// HasQuota returns true if the namespace has an active quota.
 func (qc *QuotaCache) HasQuota(namespace string) bool {
 	qc.mu.RLock()
 	defer qc.mu.RUnlock()
 	return qc.quotas[namespace]
 }
 
-// GetNamespaces returns all namespaces with active quotas.
 func (qc *QuotaCache) GetNamespaces() []string {
 	qc.mu.RLock()
 	defer qc.mu.RUnlock()
