@@ -1,31 +1,14 @@
-# Dockerfile.nri-plugin - Multi-stage build for nri-namespace-isolator plugin
-# This NRI plugin intercepts container creation to apply namespace cgroup limits
-
-# =============================================================================
-# Build Stage
-# =============================================================================
 FROM golang:1.25-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache \
-    git \
-    make \
-    ca-certificates \
-    tzdata
+RUN apk add --no-cache git make ca-certificates tzdata
 
-# Set working directory
 WORKDIR /build
 
-# Copy go mod files first for better layer caching
 COPY go.mod go.sum* ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build the binary with optimizations
 ARG VERSION=dev
 ARG COMMIT=unknown
 ARG BUILD_DATE=unknown
@@ -38,43 +21,25 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o /build/bin/nri-namespace-isolator \
     ./cmd/nri-plugin
 
-# =============================================================================
-# Runtime Stage
-# =============================================================================
 FROM alpine:3.20
 
-# Labels following OCI image spec
 LABEL org.opencontainers.image.title="NRI Namespace Isolator Plugin" \
       org.opencontainers.image.description="NRI plugin for namespace-level resource isolation" \
       org.opencontainers.image.vendor="Fulcro Tecnologia LTDA" \
       org.opencontainers.image.source="https://github.com/fulcro-cloud/namespace-isolator"
 
-# Install runtime dependencies
-# - ca-certificates: required for TLS connections
-RUN apk add --no-cache \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
+RUN apk add --no-cache ca-certificates && rm -rf /var/cache/apk/*
 
-# Create non-root user
 RUN addgroup -g 1000 nri && \
     adduser -u 1000 -G nri -s /bin/sh -D nri
 
-# Copy binary from builder
 COPY --from=builder /build/bin/nri-namespace-isolator /usr/local/bin/nri-namespace-isolator
-
-# Ensure binary is executable
 RUN chmod +x /usr/local/bin/nri-namespace-isolator
 
-# NRI plugins typically run as root to interact with container runtime
+# Runs as root to interact with container runtime
 USER root
 
-# The NRI socket directory will be mounted at runtime
 VOLUME ["/var/run/nri"]
 
-# Entrypoint with NRI plugin registration
 ENTRYPOINT ["/usr/local/bin/nri-namespace-isolator"]
-
-# Default arguments for NRI plugin registration
-# --name: Plugin name for NRI registration
-# --idx: Plugin index (priority) - lower runs first
 CMD ["--name=namespace-isolator", "--idx=10"]

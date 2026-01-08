@@ -1,12 +1,3 @@
-# =============================================================================
-# DaemonSet for NRI Namespace Isolator Plugin
-# =============================================================================
-# The NRI plugin runs on every node and is responsible for:
-# - Intercepting container creation via NRI (Node Resource Interface)
-# - Assigning containers to the appropriate namespace cgroup
-# - Ensuring containers inherit namespace-level resource limits
-# =============================================================================
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -32,18 +23,12 @@ spec:
         app.kubernetes.io/component: nri-plugin
         app.kubernetes.io/part-of: namespace-isolator
       annotations:
-        # Prometheus metrics annotations (if implemented)
         prometheus.io/scrape: "true"
         prometheus.io/port: "9091"
         prometheus.io/path: "/metrics"
     spec:
-      # Critical system component - schedule with high priority
       priorityClassName: system-node-critical
-
-      # Use dedicated service account
       serviceAccountName: namespace-isolator
-
-      # Tolerate all taints to ensure plugin runs on every node
       tolerations:
         - operator: Exists
           effect: NoSchedule
@@ -51,38 +36,26 @@ spec:
           effect: NoExecute
         - operator: Exists
           effect: PreferNoSchedule
-
-      # Only run on Linux nodes
       nodeSelector:
         kubernetes.io/os: linux
-
-      # Security context for the pod
       securityContext:
         runAsNonRoot: false
-
       containers:
         - name: nri-plugin
           image: ghcr.io/fulcro-cloud/nri-namespace-isolator:latest
           imagePullPolicy: Always
-
-          # NRI plugin registration arguments
           args:
             - --name=namespace-isolator
             - --idx=10
             - --socket-path=/var/run/nri/nri.sock
             - --metrics-addr=:9091
-
-          # Security context
           securityContext:
             privileged: false
             runAsUser: 0
             runAsGroup: 0
             readOnlyRootFilesystem: true
             capabilities:
-              drop:
-                - ALL
-
-          # Environment variables
+              drop: [ALL]
           env:
             - name: NODE_NAME
               valueFrom:
@@ -96,8 +69,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-
-          # Resource limits
           resources:
             requests:
               cpu: 25m
@@ -105,15 +76,10 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
-
-          # Volume mounts
           volumeMounts:
-            # NRI socket directory - for communication with containerd/CRI-O
             - name: nri-socket
               mountPath: /var/run/nri
               readOnly: false
-
-          # Liveness probe
           livenessProbe:
             httpGet:
               path: /healthz
@@ -122,8 +88,6 @@ spec:
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 3
-
-          # Readiness probe
           readinessProbe:
             httpGet:
               path: /readyz
@@ -132,8 +96,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
-
-          # Startup probe for slow starts
           startupProbe:
             httpGet:
               path: /healthz
@@ -142,20 +104,11 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 30
-
-      # Volumes
       volumes:
-        # NRI socket directory from the host
         - name: nri-socket
           hostPath:
             path: /var/run/nri
             type: DirectoryOrCreate
-
-      # DNS policy
       dnsPolicy: ClusterFirst
-
-      # Termination grace period
       terminationGracePeriodSeconds: 30
-
-      # Restart policy
       restartPolicy: Always

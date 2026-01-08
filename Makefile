@@ -1,53 +1,35 @@
-# =============================================================================
-# NRI Namespace Isolator - Makefile
-# =============================================================================
-
-# Project settings
 PROJECT_NAME := namespace-isolator
 MODULE := github.com/fulcro-cloud/namespace-isolator
 
-# Version info
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-# Registry settings
 REGISTRY ?= ghcr.io/fulcro-cloud
 IMAGE_TAG ?= latest
 
-# Image names
 AGENT_IMAGE := $(REGISTRY)/namespace-isolator-agent:$(IMAGE_TAG)
 PLUGIN_IMAGE := $(REGISTRY)/nri-namespace-isolator:$(IMAGE_TAG)
 
-# Go settings
 GOOS ?= linux
 GOARCH ?= amd64
 CGO_ENABLED ?= 0
 GO := CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) go
 
-# Build flags
 LDFLAGS := -w -s \
 	-X main.Version=$(VERSION) \
 	-X main.Commit=$(COMMIT) \
 	-X main.BuildDate=$(BUILD_DATE)
 
-# Output directories
 BIN_DIR := bin
 AGENT_BINARY := $(BIN_DIR)/namespace-isolator-agent
 PLUGIN_BINARY := $(BIN_DIR)/nri-namespace-isolator
 
-# Kubernetes deploy directory
 DEPLOY_DIR := deploy/kubernetes
 
-# =============================================================================
-# Default target
-# =============================================================================
 .PHONY: all
 all: build
 
-# =============================================================================
-# Build targets
-# =============================================================================
 .PHONY: build
 build: build-agent build-plugin ## Build all binaries
 
@@ -67,9 +49,6 @@ $(PLUGIN_BINARY):
 	@mkdir -p $(BIN_DIR)
 	$(GO) build -ldflags="$(LDFLAGS)" -o $(PLUGIN_BINARY) ./cmd/nri-plugin
 
-# =============================================================================
-# Docker targets
-# =============================================================================
 .PHONY: docker
 docker: docker-agent docker-plugin ## Build all Docker images
 
@@ -95,9 +74,6 @@ docker-plugin: ## Build the NRI plugin Docker image
 		-t $(PLUGIN_IMAGE) \
 		.
 
-# =============================================================================
-# Push targets
-# =============================================================================
 .PHONY: push
 push: push-agent push-plugin ## Push all Docker images to registry
 
@@ -111,14 +87,11 @@ push-plugin: ## Push the NRI plugin Docker image
 	@echo ">>> Pushing image: $(PLUGIN_IMAGE)"
 	docker push $(PLUGIN_IMAGE)
 
-# =============================================================================
-# K3s local import (sem registry)
-# =============================================================================
 LOCAL_AGENT_IMAGE := namespace-isolator-agent:$(IMAGE_TAG)
 LOCAL_PLUGIN_IMAGE := nri-namespace-isolator:$(IMAGE_TAG)
 
 .PHONY: docker-local
-docker-local: ## Build Docker images com tags locais (sem registry)
+docker-local: ## Build Docker images with local tags (no registry)
 	@echo ">>> Building local Docker image: $(LOCAL_AGENT_IMAGE)"
 	docker build \
 		--build-arg VERSION=$(VERSION) \
@@ -137,24 +110,21 @@ docker-local: ## Build Docker images com tags locais (sem registry)
 		.
 
 .PHONY: import-k3s
-import-k3s: docker-local ## Build e importar imagens direto no K3s (sem registry)
-	@echo ">>> Exportando e importando imagens no K3s..."
+import-k3s: docker-local ## Build and import images directly into K3s
+	@echo ">>> Exporting and importing images into K3s..."
 	docker save $(LOCAL_AGENT_IMAGE) | sudo k3s ctr images import -
 	docker save $(LOCAL_PLUGIN_IMAGE) | sudo k3s ctr images import -
-	@echo ">>> Imagens importadas com sucesso!"
+	@echo ">>> Images imported successfully!"
 	@sudo k3s ctr images ls | grep -E "namespace-isolator|nri-namespace"
 
 .PHONY: deploy-local
-deploy-local: import-k3s ## Build, importar e fazer deploy local no K3s
+deploy-local: import-k3s ## Build, import and deploy locally to K3s
 	@echo ">>> Deploying to K3s (local)..."
 	kubectl apply -f deploy/crds/
 	kubectl apply -f deploy/kubernetes/rbac.yaml
 	kubectl apply -f deploy/kubernetes/agent-daemonset-local.yaml
 	kubectl apply -f deploy/kubernetes/nri-plugin-daemonset-local.yaml
 
-# =============================================================================
-# Deploy targets
-# =============================================================================
 .PHONY: deploy
 deploy: ## Deploy to Kubernetes using kustomize
 	@echo ">>> Deploying to Kubernetes..."
@@ -170,9 +140,6 @@ undeploy: ## Remove deployment from Kubernetes
 	@echo ">>> Removing deployment..."
 	kubectl delete -k $(DEPLOY_DIR) --ignore-not-found=true
 
-# =============================================================================
-# Development targets
-# =============================================================================
 .PHONY: test
 test: ## Run tests
 	@echo ">>> Running tests..."
@@ -180,69 +147,50 @@ test: ## Run tests
 
 .PHONY: test-coverage
 test-coverage: test ## Run tests and show coverage report
-	@echo ">>> Coverage report..."
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
 .PHONY: fmt
 fmt: ## Format Go code
-	@echo ">>> Formatting code..."
 	go fmt ./...
 
 .PHONY: vet
 vet: ## Run go vet
-	@echo ">>> Running go vet..."
 	go vet ./...
 
 .PHONY: lint
 lint: ## Run golangci-lint
-	@echo ">>> Running linter..."
 	golangci-lint run ./...
 
 .PHONY: mod-tidy
 mod-tidy: ## Tidy go modules
-	@echo ">>> Tidying go modules..."
 	go mod tidy
 
 .PHONY: mod-download
 mod-download: ## Download go modules
-	@echo ">>> Downloading go modules..."
 	go mod download
 
-# =============================================================================
-# Code generation
-# =============================================================================
 .PHONY: generate
 generate: ## Run go generate
-	@echo ">>> Running go generate..."
 	go generate ./...
 
 .PHONY: generate-deepcopy
 generate-deepcopy: ## Generate deep copy functions
-	@echo ">>> Generating deep copy functions..."
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/api/..."
 
-# =============================================================================
-# Clean targets
-# =============================================================================
 .PHONY: clean
 clean: ## Clean build artifacts
-	@echo ">>> Cleaning..."
 	rm -rf $(BIN_DIR)
 	rm -f coverage.out coverage.html
 
 .PHONY: clean-docker
 clean-docker: ## Remove Docker images
-	@echo ">>> Removing Docker images..."
 	-docker rmi $(AGENT_IMAGE) 2>/dev/null
 	-docker rmi $(PLUGIN_IMAGE) 2>/dev/null
 
 .PHONY: clean-all
 clean-all: clean clean-docker ## Clean everything
 
-# =============================================================================
-# Help
-# =============================================================================
 .PHONY: help
 help: ## Show this help message
 	@echo "NRI Namespace Isolator - Available targets:"

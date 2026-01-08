@@ -1,6 +1,3 @@
-# =============================================================================
-# DaemonSet for Namespace Isolator Agent (LOCAL - sem registry)
-# =============================================================================
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -34,7 +31,7 @@ spec:
       containers:
         - name: agent
           image: docker.io/library/namespace-isolator-agent:latest
-          imagePullPolicy: Never  # Usar imagem local importada
+          imagePullPolicy: Never
           args:
             - --cgroup-root=/sys/fs/cgroup
             - --slice-prefix=brasa.slice

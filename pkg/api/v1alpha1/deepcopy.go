@@ -4,7 +4,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// DeepCopyInto copies the receiver into out
 func (in *NamespaceQuota) DeepCopyInto(out *NamespaceQuota) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
@@ -13,7 +12,6 @@ func (in *NamespaceQuota) DeepCopyInto(out *NamespaceQuota) {
 	in.Status.DeepCopyInto(&out.Status)
 }
 
-// DeepCopy creates a deep copy
 func (in *NamespaceQuota) DeepCopy() *NamespaceQuota {
 	if in == nil {
 		return nil
@@ -23,12 +21,10 @@ func (in *NamespaceQuota) DeepCopy() *NamespaceQuota {
 	return out
 }
 
-// DeepCopyObject creates a deep copy as runtime.Object
 func (in *NamespaceQuota) DeepCopyObject() runtime.Object {
 	return in.DeepCopy()
 }
 
-// DeepCopyInto copies spec
 func (in *NamespaceQuotaSpec) DeepCopyInto(out *NamespaceQuotaSpec) {
 	*out = *in
 	if in.Enabled != nil {
@@ -37,7 +33,6 @@ func (in *NamespaceQuotaSpec) DeepCopyInto(out *NamespaceQuotaSpec) {
 	}
 }
 
-// DeepCopy creates a deep copy of spec
 func (in *NamespaceQuotaSpec) DeepCopy() *NamespaceQuotaSpec {
 	if in == nil {
 		return nil
@@ -47,7 +42,6 @@ func (in *NamespaceQuotaSpec) DeepCopy() *NamespaceQuotaSpec {
 	return out
 }
 
-// DeepCopyInto copies status
 func (in *NamespaceQuotaStatus) DeepCopyInto(out *NamespaceQuotaStatus) {
 	*out = *in
 	if in.LastUpdated != nil {
@@ -55,7 +49,6 @@ func (in *NamespaceQuotaStatus) DeepCopyInto(out *NamespaceQuotaStatus) {
 	}
 }
 
-// DeepCopy creates a deep copy of status
 func (in *NamespaceQuotaStatus) DeepCopy() *NamespaceQuotaStatus {
 	if in == nil {
 		return nil
@@ -65,7 +58,6 @@ func (in *NamespaceQuotaStatus) DeepCopy() *NamespaceQuotaStatus {
 	return out
 }
 
-// DeepCopyInto copies list
 func (in *NamespaceQuotaList) DeepCopyInto(out *NamespaceQuotaList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
@@ -78,7 +70,6 @@ func (in *NamespaceQuotaList) DeepCopyInto(out *NamespaceQuotaList) {
 	}
 }
 
-// DeepCopy creates a deep copy of list
 func (in *NamespaceQuotaList) DeepCopy() *NamespaceQuotaList {
 	if in == nil {
 		return nil
@@ -88,7 +79,6 @@ func (in *NamespaceQuotaList) DeepCopy() *NamespaceQuotaList {
 	return out
 }
 
-// DeepCopyObject creates a deep copy as runtime.Object
 func (in *NamespaceQuotaList) DeepCopyObject() runtime.Object {
 	return in.DeepCopy()
 }

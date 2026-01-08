@@ -1,12 +1,4 @@
-# =============================================================================
-# RBAC Configuration for NRI Namespace Isolator
-# =============================================================================
-# This file defines the ServiceAccount, ClusterRole, and ClusterRoleBinding
-# required for the namespace-isolator components to function properly.
-# =============================================================================
-
 ---
-# ServiceAccount for the namespace isolator components
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -17,7 +9,6 @@ metadata:
     app.kubernetes.io/component: rbac
 
 ---
-# ClusterRole with permissions to manage NamespaceQuota resources
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -26,70 +17,31 @@ metadata:
     app.kubernetes.io/name: nri-namespace-isolator
     app.kubernetes.io/component: rbac
 rules:
-  # Permissions for NamespaceQuota custom resources
-  - apiGroups:
-      - brasa.cloud
-    resources:
-      - namespacequotas
-    verbs:
-      - get
-      - list
-      - watch
+  - apiGroups: [brasa.cloud]
+    resources: [namespacequotas]
+    verbs: [get, list, watch]
 
-  # Permissions to update NamespaceQuota status
-  - apiGroups:
-      - brasa.cloud
-    resources:
-      - namespacequotas/status
-    verbs:
-      - update
-      - patch
+  - apiGroups: [brasa.cloud]
+    resources: [namespacequotas/status]
+    verbs: [update, patch]
 
-  # Permissions to read namespaces for validation
-  - apiGroups:
-      - ""
-    resources:
-      - namespaces
-    verbs:
-      - get
-      - list
-      - watch
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, watch]
 
-  # Permissions to read pods (for container-to-namespace mapping)
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - get
-      - list
-      - watch
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
 
-  # Permissions for events (to report status changes)
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
 
-  # Permissions for coordination (leader election if needed)
-  - apiGroups:
-      - coordination.k8s.io
-    resources:
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch, delete]
 
 ---
-# ClusterRoleBinding to bind the ServiceAccount to the ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

@@ -1,6 +1,3 @@
-# =============================================================================
-# DaemonSet for NRI Plugin (LOCAL - sem registry)
-# =============================================================================
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -33,7 +30,7 @@ spec:
       containers:
         - name: nri-plugin
           image: docker.io/library/nri-namespace-isolator:latest
-          imagePullPolicy: Never  # Usar imagem local importada
+          imagePullPolicy: Never
           args:
             - --name=namespace-isolator
             - --idx=10
