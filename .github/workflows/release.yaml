@@ -50,7 +50,7 @@ jobs:
           file: ./Dockerfile.agent
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/namespace-isolator-agent:${{ steps.version.outputs.version }},ghcr.io/${{ github.repository_owner }}/namespace-isolator-agent:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -64,7 +64,7 @@ jobs:
           file: ./Dockerfile.nri-plugin
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/nri-namespace-isolator:${{ steps.version.outputs.version }},ghcr.io/${{ github.repository_owner }}/nri-namespace-isolator:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
