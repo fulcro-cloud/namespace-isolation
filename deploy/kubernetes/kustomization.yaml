@@ -1,0 +1,47 @@
+# =============================================================================
+# Kustomization for NRI Namespace Isolator
+# =============================================================================
+# This kustomization bundles all resources for deploying the complete
+# namespace isolator solution to Kubernetes.
+#
+# Usage:
+#   kubectl apply -k deploy/kubernetes/
+#
+# Or with kustomize directly:
+#   kustomize build deploy/kubernetes/ | kubectl apply -f -
+# =============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: nri-namespace-isolator
+
+# Namespace where components will be deployed
+namespace: kube-system
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/name: nri-namespace-isolator
+  app.kubernetes.io/managed-by: kustomize
+
+# Common annotations
+commonAnnotations:
+  app.kubernetes.io/version: "latest"
+
+# Resources to include in order
+resources:
+  # CRDs first (from parent directory)
+  - ../crds/namespacequota.yaml
+  # RBAC configuration
+  - rbac.yaml
+  # DaemonSets
+  - agent-daemonset.yaml
+  - nri-plugin-daemonset.yaml
+
+# Image configuration for easy override
+images:
+  - name: ghcr.io/fulcro-cloud/namespace-isolator-agent
+    newTag: latest
+  - name: ghcr.io/fulcro-cloud/nri-namespace-isolator
+    newTag: latest

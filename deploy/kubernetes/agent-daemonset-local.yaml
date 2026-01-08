@@ -1,0 +1,70 @@
+# =============================================================================
+# DaemonSet for Namespace Isolator Agent (LOCAL - sem registry)
+# =============================================================================
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: namespace-isolator-agent
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: nri-namespace-isolator
+    app.kubernetes.io/component: agent
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nri-namespace-isolator
+      app.kubernetes.io/component: agent
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nri-namespace-isolator
+        app.kubernetes.io/component: agent
+    spec:
+      priorityClassName: system-node-critical
+      serviceAccountName: namespace-isolator
+      tolerations:
+        - operator: Exists
+      nodeSelector:
+        kubernetes.io/os: linux
+      hostPID: true
+      containers:
+        - name: agent
+          image: docker.io/library/namespace-isolator-agent:latest
+          imagePullPolicy: Never  # Usar imagem local importada
+          args:
+            - --cgroup-root=/sys/fs/cgroup
+            - --slice-prefix=brasa.slice
+            - --metrics-port=9090
+            - --log-level=info
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: cgroup
+              mountPath: /sys/fs/cgroup
+      volumes:
+        - name: cgroup
+          hostPath:
+            path: /sys/fs/cgroup
+            type: Directory
+      terminationGracePeriodSeconds: 30

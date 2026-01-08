@@ -1,0 +1,64 @@
+# =============================================================================
+# DaemonSet for NRI Plugin (LOCAL - sem registry)
+# =============================================================================
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nri-namespace-isolator
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: nri-namespace-isolator
+    app.kubernetes.io/component: nri-plugin
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nri-namespace-isolator
+      app.kubernetes.io/component: nri-plugin
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nri-namespace-isolator
+        app.kubernetes.io/component: nri-plugin
+    spec:
+      priorityClassName: system-node-critical
+      serviceAccountName: namespace-isolator
+      tolerations:
+        - operator: Exists
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+        - name: nri-plugin
+          image: docker.io/library/nri-namespace-isolator:latest
+          imagePullPolicy: Never  # Usar imagem local importada
+          args:
+            - --name=namespace-isolator
+            - --idx=10
+            - --log-level=info
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: nri-socket
+              mountPath: /var/run/nri
+      volumes:
+        - name: nri-socket
+          hostPath:
+            path: /var/run/nri
+            type: DirectoryOrCreate
+      terminationGracePeriodSeconds: 30

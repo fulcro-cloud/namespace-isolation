@@ -1,0 +1,83 @@
+# Dockerfile.agent - Multi-stage build for namespace-isolator-agent
+# This agent watches NamespaceQuota CRDs and manages cgroups on each node
+
+# =============================================================================
+# Build Stage
+# =============================================================================
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    make \
+    ca-certificates \
+    tzdata
+
+# Set working directory
+WORKDIR /build
+
+# Copy go mod files first for better layer caching
+COPY go.mod go.sum* ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the binary with optimizations
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_DATE=unknown
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s \
+        -X main.Version=${VERSION} \
+        -X main.Commit=${COMMIT} \
+        -X main.BuildDate=${BUILD_DATE}" \
+    -o /build/bin/namespace-isolator-agent \
+    ./cmd/agent
+
+# =============================================================================
+# Runtime Stage
+# =============================================================================
+FROM alpine:3.20
+
+# Labels following OCI image spec
+LABEL org.opencontainers.image.title="Namespace Isolator Agent" \
+      org.opencontainers.image.description="Agent that enforces namespace resource isolation via cgroups" \
+      org.opencontainers.image.vendor="Fulcro Tecnologia LTDA" \
+      org.opencontainers.image.source="https://github.com/fulcro-cloud/namespace-isolator"
+
+# Install runtime dependencies
+# - ca-certificates: for TLS connections to API server
+# - tzdata: for proper timezone handling
+# - util-linux: for nsenter (to access host systemd)
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    util-linux \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user (though agent needs privileged for cgroup access)
+RUN addgroup -g 1000 isolator && \
+    adduser -u 1000 -G isolator -s /bin/sh -D isolator
+
+# Copy binary from builder
+COPY --from=builder /build/bin/namespace-isolator-agent /usr/local/bin/namespace-isolator-agent
+
+# Ensure binary is executable
+RUN chmod +x /usr/local/bin/namespace-isolator-agent
+
+# The agent runs as root because it needs access to /sys/fs/cgroup
+USER root
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["/usr/local/bin/namespace-isolator-agent", "--health-check"] || exit 1
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/namespace-isolator-agent"]
+
+# Default arguments
+CMD ["--cgroup-root=/sys/fs/cgroup", "--sync-interval=30s"]

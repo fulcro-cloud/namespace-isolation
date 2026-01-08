@@ -1,0 +1,97 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: namespacequotas.brasa.cloud
+  labels:
+    app.kubernetes.io/name: nri-namespace-isolator
+    app.kubernetes.io/component: crd
+spec:
+  group: brasa.cloud
+  names:
+    kind: NamespaceQuota
+    listKind: NamespaceQuotaList
+    plural: namespacequotas
+    singular: namespacequota
+    shortNames:
+      - nsq
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - namespace
+              x-kubernetes-validations:
+                - rule: "!has(self.cpu) || self.cpu == '' || double(self.cpu) > 0"
+                  message: "CPU must be a positive number"
+                - rule: "!has(self.cpu) || self.cpu == '' || double(self.cpu) <= 1000"
+                  message: "CPU cannot exceed 1000 cores"
+                - rule: "!has(self.memory) || self.memory == '' || self.memory.matches('^[0-9]+(Ki|Mi|Gi|Ti)$')"
+                  message: "Memory must be in format: 1Ki, 1Mi, 1Gi, or 1Ti"
+              properties:
+                namespace:
+                  type: string
+                  description: "Target Kubernetes namespace"
+                  pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+                  minLength: 1
+                  maxLength: 63
+                cpu:
+                  type: string
+                  description: "CPU limit in cores (e.g., '4' for 4 vCPUs)"
+                  pattern: "^[0-9]+(\\.[0-9]+)?$"
+                memory:
+                  type: string
+                  description: "Memory limit (e.g., '8Gi', '512Mi')"
+                  pattern: "^[0-9]+(Ki|Mi|Gi|Ti)?$"
+                enabled:
+                  type: boolean
+                  description: "Enable/disable quota enforcement"
+                  default: true
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                  description: "Whether the cgroup is ready"
+                message:
+                  type: string
+                  description: "Status message"
+                lastUpdated:
+                  type: string
+                  format: date-time
+                  description: "Last update timestamp"
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Namespace
+          type: string
+          jsonPath: .spec.namespace
+        - name: CPU
+          type: string
+          jsonPath: .spec.cpu
+        - name: Memory
+          type: string
+          jsonPath: .spec.memory
+        - name: Enabled
+          type: boolean
+          jsonPath: .spec.enabled
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

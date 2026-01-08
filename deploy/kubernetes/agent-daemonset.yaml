@@ -1,0 +1,172 @@
+# =============================================================================
+# DaemonSet for Namespace Isolator Agent
+# =============================================================================
+# The agent runs on every node and is responsible for:
+# - Watching NamespaceQuota CRDs
+# - Creating and managing cgroups in /sys/fs/cgroup
+# - Enforcing CPU and memory limits at the namespace level
+# =============================================================================
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: namespace-isolator-agent
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: nri-namespace-isolator
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/part-of: namespace-isolator
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nri-namespace-isolator
+      app.kubernetes.io/component: agent
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nri-namespace-isolator
+        app.kubernetes.io/component: agent
+        app.kubernetes.io/part-of: namespace-isolator
+      annotations:
+        # Prometheus metrics annotations (if implemented)
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Critical system component - schedule with high priority
+      priorityClassName: system-node-critical
+
+      # Use dedicated service account
+      serviceAccountName: namespace-isolator
+
+      # Tolerate all taints to ensure agent runs on every node
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+        - operator: Exists
+          effect: PreferNoSchedule
+
+      # Only run on Linux nodes
+      nodeSelector:
+        kubernetes.io/os: linux
+
+      # Host settings
+      hostPID: true  # Required for cgroup management
+
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: false
+
+      containers:
+        - name: agent
+          image: ghcr.io/fulcro-cloud/namespace-isolator-agent:latest
+          imagePullPolicy: Always
+
+          args:
+            - --cgroup-root=/sys/fs/cgroup
+            - --sync-interval=30s
+            - --metrics-addr=:9090
+
+          # Security context - needs privileged for cgroup access
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+            readOnlyRootFilesystem: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - SYS_RESOURCE
+
+          # Environment variables
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+          # Resource limits
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+          # Volume mounts
+          volumeMounts:
+            # cgroup filesystem - read/write for managing cgroups
+            - name: cgroup
+              mountPath: /sys/fs/cgroup
+              readOnly: false
+            # proc filesystem - read-only for process information
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness probe
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Startup probe for slow starts
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+
+      # Volumes
+      volumes:
+        # cgroup filesystem
+        - name: cgroup
+          hostPath:
+            path: /sys/fs/cgroup
+            type: Directory
+        # proc filesystem
+        - name: proc
+          hostPath:
+            path: /proc
+            type: Directory
+
+      # DNS policy
+      dnsPolicy: ClusterFirstWithHostNet
+
+      # Termination grace period
+      terminationGracePeriodSeconds: 30
+
+      # Restart policy
+      restartPolicy: Always
