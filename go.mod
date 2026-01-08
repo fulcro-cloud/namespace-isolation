@@ -1,4 +1,4 @@
-module github.com/fulcro-cloud/namespace-isolator
+module github.com/fulcro-cloud/namespace-isolation
 
 go 1.25.0
 

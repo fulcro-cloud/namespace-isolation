@@ -43,7 +43,7 @@ spec:
         runAsNonRoot: false
       containers:
         - name: agent
-          image: ghcr.io/fulcro-cloud/namespace-isolator-agent:latest
+          image: ghcr.io/fulcro-cloud/namespace-isolation-agent:latest
           imagePullPolicy: Always
           args:
             - --cgroup-root=/sys/fs/cgroup

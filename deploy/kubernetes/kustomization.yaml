@@ -20,7 +20,7 @@ resources:
   - nri-plugin-daemonset.yaml
 
 images:
-  - name: ghcr.io/fulcro-cloud/namespace-isolator-agent
+  - name: ghcr.io/fulcro-cloud/namespace-isolation-agent
     newTag: latest
   - name: ghcr.io/fulcro-cloud/nri-namespace-isolator
     newTag: latest

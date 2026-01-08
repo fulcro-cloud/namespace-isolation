@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/fulcro-cloud/namespace-isolator/pkg/agent"
+	"github.com/fulcro-cloud/namespace-isolation/pkg/agent"
 	"github.com/sirupsen/logrus"
 )
 

@@ -27,7 +27,7 @@ FROM alpine:3.20
 LABEL org.opencontainers.image.title="Namespace Isolator Agent" \
       org.opencontainers.image.description="Agent that enforces namespace resource isolation via cgroups" \
       org.opencontainers.image.vendor="Fulcro Tecnologia LTDA" \
-      org.opencontainers.image.source="https://github.com/fulcro-cloud/namespace-isolator"
+      org.opencontainers.image.source="https://github.com/fulcro-cloud/namespace-isolation"
 
 # ca-certificates: TLS to API server
 # tzdata: timezone handling

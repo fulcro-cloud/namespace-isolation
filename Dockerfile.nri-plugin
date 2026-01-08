@@ -27,7 +27,7 @@ FROM alpine:3.20
 LABEL org.opencontainers.image.title="NRI Namespace Isolator Plugin" \
       org.opencontainers.image.description="NRI plugin for namespace-level resource isolation" \
       org.opencontainers.image.vendor="Fulcro Tecnologia LTDA" \
-      org.opencontainers.image.source="https://github.com/fulcro-cloud/namespace-isolator"
+      org.opencontainers.image.source="https://github.com/fulcro-cloud/namespace-isolation"
 
 RUN apk add --no-cache ca-certificates && rm -rf /var/cache/apk/*
 

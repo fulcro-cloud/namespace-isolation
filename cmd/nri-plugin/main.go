@@ -9,7 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/fulcro-cloud/namespace-isolator/pkg/plugin"
+	"github.com/fulcro-cloud/namespace-isolation/pkg/plugin"
 )
 
 var (

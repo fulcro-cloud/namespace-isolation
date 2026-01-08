@@ -1,7 +1,7 @@
 # NRI Namespace Isolator
 
-[![Build](https://github.com/fulcro-cloud/namespace-isolator/actions/workflows/build.yaml/badge.svg)](https://github.com/fulcro-cloud/namespace-isolator/actions/workflows/build.yaml)
-[![Release](https://github.com/fulcro-cloud/namespace-isolator/actions/workflows/release.yaml/badge.svg)](https://github.com/fulcro-cloud/namespace-isolator/actions/workflows/release.yaml)
+[![Build](https://github.com/fulcro-cloud/namespace-isolation/actions/workflows/build.yaml/badge.svg)](https://github.com/fulcro-cloud/namespace-isolation/actions/workflows/build.yaml)
+[![Release](https://github.com/fulcro-cloud/namespace-isolation/actions/workflows/release.yaml/badge.svg)](https://github.com/fulcro-cloud/namespace-isolation/actions/workflows/release.yaml)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20with%20Commons%20Clause-blue.svg)](LICENSE)
 
 Namespace-level resource isolation for Kubernetes using cgroups v2 and NRI (Node Resource Interface).
@@ -58,21 +58,21 @@ NRI Namespace Isolator enforces CPU and memory limits at the **namespace level**
 
 ```bash
 # Install specific version
-kubectl apply -f https://github.com/fulcro-cloud/namespace-isolator/releases/download/v1.0.0/install.yaml
+kubectl apply -f https://github.com/fulcro-cloud/namespace-isolation/releases/download/v1.0.0/install.yaml
 ```
 
-Check [Releases](https://github.com/fulcro-cloud/namespace-isolator/releases) for available versions.
+Check [Releases](https://github.com/fulcro-cloud/namespace-isolation/releases) for available versions.
 
 ### Latest (main branch)
 
 ```bash
-kubectl apply -k https://github.com/fulcro-cloud/namespace-isolator/deploy/kubernetes
+kubectl apply -k https://github.com/fulcro-cloud/namespace-isolation/deploy/kubernetes
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/fulcro-cloud/namespace-isolator.git
+git clone https://github.com/fulcro-cloud/namespace-isolation.git
 cd namespace-isolator
 kubectl apply -k deploy/kubernetes/
 ```
@@ -83,7 +83,7 @@ Images are published to GitHub Container Registry:
 
 | Image | Description |
 |-------|-------------|
-| `ghcr.io/fulcro-cloud/namespace-isolator-agent` | Agent that manages cgroups |
+| `ghcr.io/fulcro-cloud/namespace-isolation-agent` | Agent that manages cgroups |
 | `ghcr.io/fulcro-cloud/nri-namespace-isolator` | NRI plugin for container routing |
 
 **Tags:**
